@@ -1,12 +1,8 @@
-using Dapper;
 using MySqlConnector;
 using GetMysqlDataToinfluxDb.Models;
 
 namespace GetMysqlDataToinfluxDb.Services;
 
-/// <summary>
-/// MySQL 数据读取服务
-/// </summary>
 public class MySqlDataService
 {
     private readonly string _connectionString;
@@ -16,27 +12,23 @@ public class MySqlDataService
         _connectionString = connectionString;
     }
 
-    /// <summary>
-    /// 获取当前时间前 N 分钟内的数据，每个 mmsi 只取 position_time 最新的一条
-    /// </summary>
-    public async Task<IEnumerable<ShipTrackPoint>> GetLatestPerMmsiAsync(int lookbackMinutes)
+    public async Task<List<ShipTrackPoint>> GetLatestPerMmsiAsync(int lookbackMinutes)
     {
         using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
 
-        // 直接拼接整数值，避免 MySqlConnector 参数化与用户变量冲突
         var sql = $@"
             SELECT
-                t.id AS Id,
-                t.mmsi AS Mmsi,
-                CAST(IFNULL(t.data_source, 0) AS SIGNED) AS DataSource,
-                t.position_time AS PositionTime,
-                IFNULL(t.position_utc, 0) AS PositionUtc,
-                t.lng AS Lng,
-                t.lat AS Lat,
-                IFNULL(t.sog, 0) AS Sog,
-                IFNULL(t.cog, 0) AS Cog,
-                IFNULL(t.create_time, t.position_time) AS CreateTime
+                t.id,
+                t.mmsi,
+                IFNULL(t.data_source, 0) AS data_source,
+                t.position_time,
+                IFNULL(t.position_utc, 0) AS position_utc,
+                t.lng,
+                t.lat,
+                IFNULL(t.sog, 0) AS sog,
+                IFNULL(t.cog, 0) AS cog,
+                IFNULL(t.create_time, t.position_time) AS create_time
             FROM wits_ship_track_point t
             INNER JOIN (
                 SELECT mmsi, MAX(position_time) AS max_time
@@ -45,12 +37,30 @@ public class MySqlDataService
                 GROUP BY mmsi
             ) latest ON t.mmsi = latest.mmsi AND t.position_time = latest.max_time";
 
-        return await connection.QueryAsync<ShipTrackPoint>(sql);
+        using var cmd = new MySqlCommand(sql, connection);
+        using var reader = await cmd.ExecuteReaderAsync();
+
+        var list = new List<ShipTrackPoint>();
+        while (await reader.ReadAsync())
+        {
+            list.Add(new ShipTrackPoint
+            {
+                Id = reader.GetInt64("id"),
+                Mmsi = reader.GetString("mmsi"),
+                DataSource = reader.GetInt32("data_source"),
+                PositionTime = reader.GetDateTime("position_time"),
+                PositionUtc = reader.GetInt64("position_utc"),
+                Lng = reader.GetDecimal("lng"),
+                Lat = reader.GetDecimal("lat"),
+                Sog = reader.GetDecimal("sog"),
+                Cog = reader.GetDecimal("cog"),
+                CreateTime = reader.GetDateTime("create_time")
+            });
+        }
+
+        return list;
     }
 
-    /// <summary>
-    /// 测试数据库连接
-    /// </summary>
     public async Task<bool> TestConnectionAsync()
     {
         try
