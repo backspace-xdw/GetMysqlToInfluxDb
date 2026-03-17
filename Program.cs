@@ -1,6 +1,9 @@
 using Microsoft.Extensions.Configuration;
 using GetMysqlDataToinfluxDb.Services;
 
+try
+{
+
 // 加载配置文件
 var configuration = new ConfigurationBuilder()
     .SetBasePath(AppContext.BaseDirectory)
@@ -38,6 +41,8 @@ var mysqlService = new MySqlDataService(connectionString);
 if (!await mysqlService.TestConnectionAsync())
 {
     Console.WriteLine("[FATAL] 无法连接到 MySQL，程序退出");
+    Console.WriteLine("按任意键退出...");
+    Console.ReadKey();
     return;
 }
 
@@ -69,3 +74,11 @@ catch (TaskCanceledException)
 Console.WriteLine("\n[INFO] 正在停止同步线程...");
 syncWorker.Stop();
 Console.WriteLine("[INFO] 程序已退出");
+
+}
+catch (Exception ex)
+{
+    Console.WriteLine($"[FATAL] 程序异常: {ex.Message}");
+    Console.WriteLine("按任意键退出...");
+    Console.ReadKey();
+}
