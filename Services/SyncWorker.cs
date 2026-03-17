@@ -81,14 +81,14 @@ public class SyncWorker
                         int deivetype = 2;
                         string vehicleNo = point.Mmsi;
 
-                        long gpsTime = point.PositionUtc.HasValue
-                            ? point.PositionUtc.Value
+                        long gpsTime = point.PositionUtc != 0
+                            ? point.PositionUtc
                             : new DateTimeOffset(point.PositionTime).ToUnixTimeSeconds();
 
                         decimal longitude = point.Lng;
                         decimal latitude = point.Lat;
-                        decimal speed = (point.Sog.HasValue && point.Sog.Value != -1) ? point.Sog.Value : 0;
-                        decimal state = (point.Cog.HasValue && point.Cog.Value != -1) ? point.Cog.Value : 0;
+                        decimal speed = point.Sog != -1 ? point.Sog : 0;
+                        decimal state = point.Cog != -1 ? point.Cog : 0;
 
                         string line = $"trajectoryData,Deivetype={deivetype},vehicle_no={vehicleNo},gps_time={gpsTime} longitude={longitude},latitude={latitude},speed={speed},state={state}\n";
                         dataPoints.Append(line);
