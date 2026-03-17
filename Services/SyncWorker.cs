@@ -82,8 +82,8 @@ public class SyncWorker
                         string vehicleNo = point.Mmsi;
 
                         long gpsTime = point.PositionUtc.HasValue
-                            ? point.PositionUtc.Value * 1000
-                            : new DateTimeOffset(point.PositionTime).ToUnixTimeMilliseconds();
+                            ? point.PositionUtc.Value
+                            : new DateTimeOffset(point.PositionTime).ToUnixTimeSeconds();
 
                         decimal longitude = point.Lng;
                         decimal latitude = point.Lat;
