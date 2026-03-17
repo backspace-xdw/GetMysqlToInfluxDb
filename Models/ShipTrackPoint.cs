@@ -5,6 +5,8 @@ namespace GetMysqlDataToinfluxDb.Models;
 /// </summary>
 public class ShipTrackPoint
 {
+    public ShipTrackPoint() { }
+
     public long Id { get; set; }
 
     /// <summary>船舶 MMSI</summary>
