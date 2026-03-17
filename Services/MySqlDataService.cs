@@ -24,11 +24,12 @@ public class MySqlDataService
         using var connection = new MySqlConnection(_connectionString);
         await connection.OpenAsync();
 
-        var sql = @"
+        // 直接拼接整数值，避免 MySqlConnector 参数化与用户变量冲突
+        var sql = $@"
             SELECT
                 t.id AS Id,
                 t.mmsi AS Mmsi,
-                t.data_source AS DataSource,
+                CAST(t.data_source AS SIGNED) AS DataSource,
                 t.position_time AS PositionTime,
                 t.position_utc AS PositionUtc,
                 t.lng AS Lng,
@@ -40,14 +41,11 @@ public class MySqlDataService
             INNER JOIN (
                 SELECT mmsi, MAX(position_time) AS max_time
                 FROM wits_ship_track_point
-                WHERE position_time >= DATE_SUB(NOW(), INTERVAL @LookbackMinutes MINUTE)
+                WHERE position_time >= DATE_SUB(NOW(), INTERVAL {lookbackMinutes} MINUTE)
                 GROUP BY mmsi
             ) latest ON t.mmsi = latest.mmsi AND t.position_time = latest.max_time";
 
-        return await connection.QueryAsync<ShipTrackPoint>(sql, new
-        {
-            LookbackMinutes = lookbackMinutes
-        });
+        return await connection.QueryAsync<ShipTrackPoint>(sql);
     }
 
     /// <summary>
