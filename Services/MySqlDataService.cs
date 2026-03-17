@@ -29,14 +29,14 @@ public class MySqlDataService
             SELECT
                 t.id AS Id,
                 t.mmsi AS Mmsi,
-                CAST(t.data_source AS SIGNED) AS DataSource,
+                CAST(IFNULL(t.data_source, 0) AS SIGNED) AS DataSource,
                 t.position_time AS PositionTime,
-                t.position_utc AS PositionUtc,
+                IFNULL(t.position_utc, 0) AS PositionUtc,
                 t.lng AS Lng,
                 t.lat AS Lat,
-                t.sog AS Sog,
-                t.cog AS Cog,
-                t.create_time AS CreateTime
+                IFNULL(t.sog, 0) AS Sog,
+                IFNULL(t.cog, 0) AS Cog,
+                IFNULL(t.create_time, t.position_time) AS CreateTime
             FROM wits_ship_track_point t
             INNER JOIN (
                 SELECT mmsi, MAX(position_time) AS max_time
