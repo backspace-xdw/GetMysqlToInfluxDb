@@ -90,7 +90,7 @@ public class SyncWorker
                         decimal speed = point.Sog != -1 ? point.Sog : 0;
                         decimal state = point.Cog != -1 ? point.Cog : 0;
 
-                        string line = $"trajectoryData,Deivetype={deivetype},vehicle_no={vehicleNo},gps_time={gpsTime} longitude={longitude},latitude={latitude},speed={speed},state={state}\n";
+                        string line = $"trajectoryData,Deivetype={deivetype},vehicle_no={vehicleNo} gps_time={gpsTime},longitude={longitude},latitude={latitude},speed={speed},state={state}\n";
                         dataPoints.Append(line);
 
                         Console.WriteLine($"  [SyncWorker] MMSI={vehicleNo}, gps_time={gpsTime}, lng={longitude}, lat={latitude}, speed={speed}, state={state}");
