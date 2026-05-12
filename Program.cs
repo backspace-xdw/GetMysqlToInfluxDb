@@ -42,7 +42,7 @@ if (!await mysqlService.TestConnectionAsync())
 {
     Console.WriteLine("[FATAL] 无法连接到 MySQL，程序退出");
     Console.WriteLine("按任意键退出...");
-    Console.ReadKey();
+    if (!Console.IsInputRedirected) Console.ReadKey(); else Console.Read();
     return;
 }
 
@@ -80,5 +80,5 @@ catch (Exception ex)
 {
     Console.WriteLine($"[FATAL] 程序异常: {ex.Message}");
     Console.WriteLine("按任意键退出...");
-    Console.ReadKey();
+    if (!Console.IsInputRedirected) Console.ReadKey(); else Console.Read();
 }
