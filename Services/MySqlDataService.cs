@@ -32,11 +32,11 @@ public class MySqlDataService
                 IFNULL(ct.ship_name, '') AS ship_name
             FROM wits_ship_track_point t
             INNER JOIN (
-                SELECT mmsi, MAX(position_time) AS max_time
+                SELECT MAX(id) AS max_id
                 FROM wits_ship_track_point
                 WHERE position_time >= DATE_SUB(NOW(), INTERVAL {lookbackMinutes} MINUTE)
                 GROUP BY mmsi
-            ) latest ON t.mmsi = latest.mmsi AND t.position_time = latest.max_time
+            ) latest ON t.id = latest.max_id
             LEFT JOIN (
                 SELECT mmsi, ship_name
                 FROM wits_checkpoint_transit ct1
