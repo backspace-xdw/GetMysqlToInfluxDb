@@ -12,4 +12,5 @@ public class ShipTrackPoint
     public decimal Sog { get; set; }
     public decimal Cog { get; set; }
     public DateTime CreateTime { get; set; }
+    public string ShipName { get; set; } = "";
 }

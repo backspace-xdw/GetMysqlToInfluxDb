@@ -28,14 +28,26 @@ public class MySqlDataService
                 t.lat,
                 IFNULL(t.sog, 0) AS sog,
                 IFNULL(t.cog, 0) AS cog,
-                IFNULL(t.create_time, t.position_time) AS create_time
+                IFNULL(t.create_time, t.position_time) AS create_time,
+                IFNULL(ct.ship_name, '') AS ship_name
             FROM wits_ship_track_point t
             INNER JOIN (
                 SELECT mmsi, MAX(position_time) AS max_time
                 FROM wits_ship_track_point
                 WHERE position_time >= DATE_SUB(NOW(), INTERVAL {lookbackMinutes} MINUTE)
                 GROUP BY mmsi
-            ) latest ON t.mmsi = latest.mmsi AND t.position_time = latest.max_time";
+            ) latest ON t.mmsi = latest.mmsi AND t.position_time = latest.max_time
+            LEFT JOIN (
+                SELECT c1.mmsi, c1.ship_name
+                FROM wits_checkpoint_transit c1
+                INNER JOIN (
+                    SELECT mmsi, MAX(create_time) AS max_create_time
+                    FROM wits_checkpoint_transit
+                    WHERE mmsi IS NOT NULL AND mmsi <> ''
+                      AND ship_name IS NOT NULL AND ship_name <> ''
+                    GROUP BY mmsi
+                ) c2 ON c1.mmsi = c2.mmsi AND c1.create_time = c2.max_create_time
+            ) ct ON t.mmsi = ct.mmsi";
 
         using var cmd = new MySqlCommand(sql, connection);
         using var reader = await cmd.ExecuteReaderAsync();
@@ -54,7 +66,8 @@ public class MySqlDataService
                 Lat = reader.GetDecimal("lat"),
                 Sog = reader.GetDecimal("sog"),
                 Cog = reader.GetDecimal("cog"),
-                CreateTime = reader.GetDateTime("create_time")
+                CreateTime = reader.GetDateTime("create_time"),
+                ShipName = reader.GetString("ship_name")
             });
         }
 

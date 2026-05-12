@@ -90,10 +90,14 @@ public class SyncWorker
                         decimal speed = point.Sog != -1 ? point.Sog : 0;
                         decimal state = point.Cog != -1 ? point.Cog : 0;
 
-                        string line = $"trajectoryData,Deivetype={deivetype},vehicle_no={vehicleNo} gps_time={gpsTime},longitude={longitude},latitude={latitude},speed={speed},state={state}\n";
+                        string shipNameTag = string.IsNullOrEmpty(point.ShipName)
+                            ? ""
+                            : $",ship_name={EscapeTagValue(point.ShipName)}";
+
+                        string line = $"trajectoryData,Deivetype={deivetype},vehicle_no={vehicleNo}{shipNameTag} gps_time={gpsTime},longitude={longitude},latitude={latitude},speed={speed},state={state}\n";
                         dataPoints.Append(line);
 
-                        Console.WriteLine($"  [SyncWorker] MMSI={vehicleNo}, gps_time={gpsTime}, lng={longitude}, lat={latitude}, speed={speed}, state={state}");
+                        Console.WriteLine($"  [SyncWorker] MMSI={vehicleNo}, ship_name={point.ShipName}, gps_time={gpsTime}, lng={longitude}, lat={latitude}, speed={speed}, state={state}");
                     }
 
                     // 3. 批量写入 InfluxDB
@@ -122,6 +126,16 @@ public class SyncWorker
             }
         }
     }
+
+    /// <summary>
+    /// 转义 InfluxDB Line Protocol 中 tag 值的特殊字符
+    /// 必须转义：反斜杠、空格、逗号、等号
+    /// </summary>
+    private static string EscapeTagValue(string value) =>
+        value.Replace("\\", "\\\\")
+             .Replace(" ", "\\ ")
+             .Replace(",", "\\,")
+             .Replace("=", "\\=");
 
     /// <summary>
     /// 批量写入 InfluxDB
