@@ -38,15 +38,15 @@ public class MySqlDataService
                 GROUP BY mmsi
             ) latest ON t.mmsi = latest.mmsi AND t.position_time = latest.max_time
             LEFT JOIN (
-                SELECT c1.mmsi, c1.ship_name
-                FROM wits_checkpoint_transit c1
-                INNER JOIN (
-                    SELECT mmsi, MAX(create_time) AS max_create_time
-                    FROM wits_checkpoint_transit
-                    WHERE mmsi IS NOT NULL AND mmsi <> ''
-                      AND ship_name IS NOT NULL AND ship_name <> ''
-                    GROUP BY mmsi
-                ) c2 ON c1.mmsi = c2.mmsi AND c1.create_time = c2.max_create_time
+                SELECT mmsi, ship_name
+                FROM wits_checkpoint_transit ct1
+                WHERE ship_name IS NOT NULL AND ship_name <> ''
+                  AND mmsi IS NOT NULL AND mmsi <> ''
+                  AND id = (
+                      SELECT MAX(id) FROM wits_checkpoint_transit ct2
+                      WHERE ct2.mmsi = ct1.mmsi
+                        AND ct2.ship_name IS NOT NULL AND ct2.ship_name <> ''
+                  )
             ) ct ON t.mmsi = ct.mmsi";
 
         using var cmd = new MySqlCommand(sql, connection);
