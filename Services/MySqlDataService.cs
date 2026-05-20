@@ -22,34 +22,23 @@ public class MySqlDataService
                 t.id,
                 t.mmsi,
                 IFNULL(t.data_source, 0) AS data_source,
-                t.position_time,
-                IFNULL(t.position_utc, 0) AS position_utc,
-                t.lng,
-                t.lat,
+                IFNULL(t.last_time_utc, 0) AS last_time_utc,
+                IFNULL(t.lng, 0) AS lng,
+                IFNULL(t.lat, 0) AS lat,
                 IFNULL(t.sog, 0) AS sog,
                 IFNULL(t.cog, 0) AS cog,
-                IFNULL(t.create_time, t.position_time) AS create_time,
-                IFNULL(ct.ship_name, '') AS ship_name
-            FROM wits_ship_track_point t
+                IFNULL(t.ship_cnname, '') AS ship_name
+            FROM wits_shipxy_area_ship_snapshot t
             INNER JOIN (
                 SELECT MAX(id) AS max_id
-                FROM wits_ship_track_point
-                WHERE position_time >= DATE_SUB(NOW(), INTERVAL {lookbackMinutes} MINUTE)
+                FROM wits_shipxy_area_ship_snapshot
+                WHERE mmsi IS NOT NULL AND mmsi <> ''
+                  AND lng IS NOT NULL AND lat IS NOT NULL
+                  AND last_time_utc >= UNIX_TIMESTAMP(DATE_SUB(NOW(), INTERVAL {lookbackMinutes} MINUTE))
                 GROUP BY mmsi
-            ) latest ON t.id = latest.max_id
-            LEFT JOIN (
-                SELECT mmsi, ship_name
-                FROM wits_checkpoint_transit ct1
-                WHERE ship_name IS NOT NULL AND ship_name <> ''
-                  AND mmsi IS NOT NULL AND mmsi <> ''
-                  AND id = (
-                      SELECT MAX(id) FROM wits_checkpoint_transit ct2
-                      WHERE ct2.mmsi = ct1.mmsi
-                        AND ct2.ship_name IS NOT NULL AND ct2.ship_name <> ''
-                  )
-            ) ct ON t.mmsi = ct.mmsi";
+            ) latest ON t.id = latest.max_id";
 
-        using var cmd = new MySqlCommand(sql, connection);
+        using var cmd = new MySqlCommand(sql, connection) { CommandTimeout = 30 };
         using var reader = await cmd.ExecuteReaderAsync();
 
         var list = new List<ShipTrackPoint>();
@@ -60,13 +49,11 @@ public class MySqlDataService
                 Id = reader.GetInt64("id"),
                 Mmsi = reader.GetString("mmsi"),
                 DataSource = reader.GetInt32("data_source"),
-                PositionTime = reader.GetDateTime("position_time"),
-                PositionUtc = reader.GetInt64("position_utc"),
+                LastTimeUtc = reader.GetInt64("last_time_utc"),
                 Lng = reader.GetDecimal("lng"),
                 Lat = reader.GetDecimal("lat"),
                 Sog = reader.GetDecimal("sog"),
                 Cog = reader.GetDecimal("cog"),
-                CreateTime = reader.GetDateTime("create_time"),
                 ShipName = reader.GetString("ship_name")
             });
         }

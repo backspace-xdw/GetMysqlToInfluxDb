@@ -24,9 +24,9 @@ public class SyncWorker
         _mysqlService = mysqlService;
         _lookbackMinutes = lookbackMinutes;
         _syncIntervalSeconds = syncIntervalSeconds;
-        _influxWriteUrl = $"{influxUrl}/write?db={influxDbName}";
+        _influxWriteUrl = $"{influxUrl}/write?db={influxDbName}&precision=s";
         _influxAuthHeader = Convert.ToBase64String(Encoding.ASCII.GetBytes($"{influxUsername}:{influxPassword}"));
-        _httpClient = new HttpClient();
+        _httpClient = new HttpClient { Timeout = TimeSpan.FromSeconds(30) };
         _httpClient.DefaultRequestHeaders.Authorization =
             new System.Net.Http.Headers.AuthenticationHeaderValue("Basic", _influxAuthHeader);
     }
@@ -81,9 +81,9 @@ public class SyncWorker
                         int deivetype = 2;
                         string vehicleNo = point.Mmsi;
 
-                        long gpsTime = point.PositionUtc != 0
-                            ? point.PositionUtc
-                            : new DateTimeOffset(point.PositionTime).ToUnixTimeSeconds();
+                        long gpsTime = point.LastTimeUtc != 0
+                            ? point.LastTimeUtc
+                            : DateTimeOffset.UtcNow.ToUnixTimeSeconds();
 
                         decimal longitude = point.Lng;
                         decimal latitude = point.Lat;
@@ -94,7 +94,7 @@ public class SyncWorker
                             ? ""
                             : $",ship_name={EscapeTagValue(point.ShipName)}";
 
-                        string line = $"trajectoryData,Deivetype={deivetype},vehicle_no={vehicleNo}{shipNameTag} gps_time={gpsTime},longitude={longitude},latitude={latitude},speed={speed},state={state}\n";
+                        string line = $"trajectoryData,Deivetype={deivetype},vehicle_no={vehicleNo}{shipNameTag} gps_time={gpsTime},longitude={longitude},latitude={latitude},speed={speed},state={state} {gpsTime}\n";
                         dataPoints.Append(line);
 
                         Console.WriteLine($"  [SyncWorker] MMSI={vehicleNo}, ship_name={point.ShipName}, gps_time={gpsTime}, lng={longitude}, lat={latitude}, speed={speed}, state={state}");
