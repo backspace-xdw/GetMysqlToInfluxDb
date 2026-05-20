@@ -27,7 +27,7 @@ public class MySqlDataService
                 IFNULL(t.lat, 0) AS lat,
                 IFNULL(t.sog, 0) AS sog,
                 IFNULL(t.cog, 0) AS cog,
-                IFNULL(t.ship_cnname, '') AS ship_name
+                COALESCE(NULLIF(TRIM(t.ship_cnname), ''), NULLIF(TRIM(t.ship_name), ''), '') AS ship_name
             FROM wits_shipxy_area_ship_snapshot t
             INNER JOIN (
                 SELECT MAX(id) AS max_id
